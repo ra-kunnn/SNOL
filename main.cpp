@@ -7,8 +7,9 @@ using namespace std;
 
 int main() {
 
-    cout << "Heylp I am Snole pls give Command. enter HELP for full command list";
+    cout << "The SNOL Environment is now active, you may proceed with giving your commands. Enter HELP for full command list";
     //should show all possible commands rin para nice
+    //start with making ADD work
 
     do{
 
@@ -16,8 +17,7 @@ int main() {
         string command;
         getline(cin, command);
 
-
-
+        
 
 
     }while();
