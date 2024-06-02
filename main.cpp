@@ -18,6 +18,7 @@ enum TokenType {
     COMMAND,
     VARIABLE,
     OPERATOR,
+    ASSIGNMENT,
     NUMBER,
     LPAREN,
     RPAREN,
@@ -28,39 +29,40 @@ enum TokenType {
 struct Token {
     TokenType type;
     string value;
-}
+};
 
 vector<Token> tokenize(const string& command) {
-    vector<string> tokens;
+    vector<Token> tokens;
     regex tokenPattern("(BEG|PRINT|HELP|EXIT!|[a-zA-Z_][a-zA-Z0-9_]*|\\d*\\.?\\d+|=|\\+|\\-|\\*|\\/|\\%|\\(|\\))");
     auto words_begin = sregex_iterator(command.begin(), command.end(), tokenPattern);
     auto words_end = sregex_iterator();
 
     for (sregex_iterator i = words_begin; i != words_end; ++i) {
-            smatch match = *i;
-            string token = match.str();
-            
-            if (regex_match(token, regex("(BEG|PRINT|HELP|EXIT!)"))) {
-                tokens.push_back({COMMAND, token});
-            } else if (regex_match(token, regex("[a-zA-Z_][a-zA-Z0-9_]*"))) {
-                tokens.push_back({VARIABLE, token});
-            } else if (regex_match(token, regex("\\d*\\.?\\d+"))) {
-                tokens.push_back({NUMBER, token});
-            } else if (token == "=") {
-                tokens.push_back({ASSIGNMENT, token});
-            } else if (token == "(") {
-                tokens.push_back({LPAREN, token});
-            } else if (token == ")") {
-                tokens.push_back({RPAREN, token});
-            } else if (token == "+" || token == "-" || token == "*" || token == "/" || token == "%") {
-                tokens.push_back({OPERATOR, token});
-            } else {
-                tokens.push_back({UNKNOWN, token});
-            }
-        }
+        smatch match = *i;
+        string token = match.str();
         
-        return tokens;
+        if (regex_match(token, regex("(BEG|PRINT|HELP|EXIT!)"))) {
+            tokens.push_back({COMMAND, token});
+        } else if (regex_match(token, regex("[a-zA-Z_][a-zA-Z0-9_]*"))) {
+            tokens.push_back({VARIABLE, token});
+        } else if (regex_match(token, regex("\\d*\\.?\\d+"))) {
+            tokens.push_back({NUMBER, token});
+        } else if (token == "=") {
+            tokens.push_back({ASSIGNMENT, token});
+        } else if (token == "(") {
+            tokens.push_back({LPAREN, token});
+        } else if (token == ")") {
+            tokens.push_back({RPAREN, token});
+        } else if (token == "+" || token == "-" || token == "*" || token == "/" || token == "%") {
+            tokens.push_back({OPERATOR, token});
+        } else {
+            tokens.push_back({UNKNOWN, token});
+        }
+    }
+    
+    return tokens;
 }
+
 
 // Function to handle the HELP command
 void printHelp() {
@@ -71,11 +73,11 @@ void printHelp() {
     cout << "EXIT!               - Exit the SNOL environment\n";
 }
 
-void assignVar(){} //variable assignment ex. num = 10+2
+void assignVar(const unordered_map<string, float>& variables, const string& givenVar, const vector<Token>& tokens){} //variable assignment ex. num = 10+2
 
 void beg(){} //beg command BEG var, then ask input var>
 
-void print(){}
+void print(const string& givenVar){}
 
 
 
@@ -89,14 +91,14 @@ int main() {
         string command;
         getline(cin, command);
 
-        vector<string> tokens = tokenize(command);
+        vector<Token> tokens = tokenize(command);
 
         if (tokens.empty()){
             cout << "\n\nPlease enter a command.";
             continue;
         }  
 
-        string cmd = tokens[0];
+        string cmd = tokens[0].value;
 
         if (cmd == "HELP") {
             printHelp();
