@@ -1,33 +1,65 @@
 /*
 
-
 SNOL
-
-THE ADD DOESNT ACTUALLY EXIST FOR THIS ASSIGNMENT !!! JUST A PLACEHOLDER
 
 */
 
 #include <iostream>
-#include <stack>
 #include <string>
-#include <sstream>
 #include <vector>
-#include <limits>
+#include <regex>
+#include <unordered_map>
 
 using namespace std;
 
-//we get, BEG PRINT EXIT! NUMBER VARIABLE OPERATOR
+//we get, BEG PRINT EXIT! NUMBER VARIABLE OPERATORS PARENTHESIS
+
+enum TokenType {
+    COMMAND,
+    VARIABLE,
+    OPERATOR,
+    NUMBER,
+    LPAREN,
+    RPAREN,
+    UNKNOWN
+};
 
 
-// Function to split the command into tokens
-vector<string> tokenize(const string& command) {
+struct Token {
+    TokenType type;
+    string value;
+}
+
+vector<Token> tokenize(const string& command) {
     vector<string> tokens;
-    istringstream stream(command);
-    string token;
-    while (stream >> token) {
-        tokens.push_back(token);
-    }
-    return tokens;
+    regex tokenPattern("(BEG|PRINT|HELP|EXIT!|[a-zA-Z_][a-zA-Z0-9_]*|\\d*\\.?\\d+|=|\\+|\\-|\\*|\\/|\\%|\\(|\\))");
+    auto words_begin = sregex_iterator(command.begin(), command.end(), tokenPattern);
+    auto words_end = sregex_iterator();
+
+    for (sregex_iterator i = words_begin; i != words_end; ++i) {
+            smatch match = *i;
+            string token = match.str();
+            
+            if (regex_match(token, regex("(BEG|PRINT|HELP|EXIT!)"))) {
+                tokens.push_back({COMMAND, token});
+            } else if (regex_match(token, regex("[a-zA-Z_][a-zA-Z0-9_]*"))) {
+                tokens.push_back({VARIABLE, token});
+            } else if (regex_match(token, regex("\\d*\\.?\\d+"))) {
+                tokens.push_back({NUMBER, token});
+            } else if (token == "=") {
+                tokens.push_back({ASSIGNMENT, token});
+            } else if (token == "(") {
+                tokens.push_back({LPAREN, token});
+            } else if (token == ")") {
+                tokens.push_back({RPAREN, token});
+            } else if (token == "+" || token == "-" || token == "*" || token == "/" || token == "%") {
+                tokens.push_back({OPERATOR, token});
+            } else {
+                tokens.push_back({UNKNOWN, token});
+            }
+        }
+        
+        return tokens;
 }
 
 // Function to handle the HELP command
@@ -36,24 +68,12 @@ void printHelp() {
     cout << "HELP               - Display this help message\n";
     cout << "BEG <variable>     - Input value for given var\n";
     cout << "PRINT <variable>   - Display value of given variable\n";
-    cout << "ADD <number>       - Add the number to the current value\n"; //to remove after use
-    cout << "EXIT               - Exit the SNOL environment\n";
+    cout << "EXIT!               - Exit the SNOL environment\n";
 }
 
-// handles ADD, removing this later just for reference
-void add(stack<int>& valueStack, const string& numberStr) {
-    int number = stoi(numberStr);
-    if (valueStack.empty()) {
-        valueStack.push(number);
-    } else {
-        int current = valueStack.top();
-        valueStack.pop();
-        valueStack.push(current + number);
-    }
-    cout << "Current value: " << valueStack.top();
-}
+void assignVar(){} //variable assignment ex. num = 10+2
 
-void beg(){}
+void beg(){} //beg command BEG var, then ask input var>
 
 void print(){}
 
@@ -62,7 +82,7 @@ void print(){}
 int main() {
     cout << "The SNOL Environment is now active, you may proceed with giving your commands. Enter HELP for full command list";
     
-    stack<int> valueStack; //add stack, delete later
+    unordered_map<string, float> variables; //stores key value pairs, so like num = var, it assigns the string to the float (w/c already includes the errm.... iint)
 
     while (true) {
         cout << "\n\nEnter Command: ";
@@ -78,31 +98,29 @@ int main() {
 
         string cmd = tokens[0];
 
-        switch(cmd){
-            case "HELP":
-                printHelp();
-                break;
-            case "BEG":
-                if (tokens.size() != 2) {
-                    cout << "Error: BEG. Wait for the SNOL to ask for value of variable.";
-                }
-                else beg();
-                break;
-            case "PRINT":
-                if (tokens.size() != 2) {
-                    cout << "Error: PRINT. Cannot print multiple variables.";
-                }
-                else print(tokens[1]);
-                break;
-            case "ADD": //placeholder
-                add(valueStack, tokens[1]);
-                break;
-            case "EXIT!":
-                cout << "\n\nExiting SNOL...";
-                return 0;
-            default:
-                cout << "Unknown command. Enter HELP for a list of available commands.";
-                break;
+        if (cmd == "HELP") {
+            printHelp();
+        } else if (cmd == "EXIT!") {
+            cout << "\n\nExiting SNOL...";
+            break;
+        } else if (cmd == "BEG") {
+            //idk what variables ud need
+            beg();
+        } else if (cmd == "PRINT") {
+            // prints the variable value  lol
+            if (tokens.size() != 2) {
+                cout << "Error: PRINT. Cannot print multiple variables.";
+            } else {
+                print(tokens[1].value); // token.value this gives print the variable name
+            }
+        } else if (tokens[0].type == VARIABLE && tokens.size() > 1 && tokens[1].type == OPERATOR) {
+            // Handle variable assignment
+            assignVar(variables, tokens[0].value, tokens); 
+            //variables is the unordered map of the given var, token0 is name of var, tokens is all the tokens in given command. tho idk bahala u ano need mo
+        } else {
+            cout << "Unknown command. Enter HELP for a list of available commands.";
         }
+    }
 
+    return 0;
 }
