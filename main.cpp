@@ -67,17 +67,18 @@ vector<Token> tokenize(const string& command) {
 // Function to handle the HELP command
 void printHelp() {
     cout << "Available commands:\n";
-    cout << "HELP               - Display this help message\n";
-    cout << "BEG <variable>     - Input value for given var\n";
-    cout << "PRINT <variable>   - Display value of given variable\n";
-    cout << "EXIT!               - Exit the SNOL environment\n";
+    cout << "HELP                                    - Display this help message\n";
+    cout << "BEG <variable>                          - Input value for given var\n";
+    cout << "PRINT <variable>                        - Display value of given variable\n";
+    cout << "<variable> = <number> | <expression>    - Display value of given variable\n";
+    cout << "EXIT!                                   - Exit the SNOL environment\n";
 }
 
 void assignVar(const unordered_map<string, float>& variables, const string& givenVar, const vector<Token>& tokens){} //variable assignment ex. num = 10+2
 
 void beg(){} //beg command BEG var, then ask input var>
 
-void print(const string& givenVar){}
+void print(const string& givenVar){} //prints variable value n name
 
 
 
@@ -106,7 +107,7 @@ int main() {
             cout << "\n\nExiting SNOL...";
             break;
         } else if (cmd == "BEG") {
-            //idk what variables ud need
+            //idk what variables ud need... maybe the token[1].value for the varname
             beg();
         } else if (cmd == "PRINT") {
             // prints the variable value  lol
@@ -118,7 +119,7 @@ int main() {
         } else if (tokens[0].type == VARIABLE && tokens.size() > 1 && tokens[1].type == OPERATOR) {
             // Handle variable assignment
             assignVar(variables, tokens[0].value, tokens); 
-            //variables is the unordered map of the given var, token0 is name of var, tokens is all the tokens in given command. tho idk bahala u ano need mo
+            //variables is the unordered map of the given var(unoordered map is basically sth that assigns to variables idk isearch mo lng), token0 is name of var, tokens is all the tokens in given command. tho idk bahala u ano need mo
         } else {
             cout << "Unknown command. Enter HELP for a list of available commands.";
         }
