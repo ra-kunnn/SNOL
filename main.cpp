@@ -1,3 +1,12 @@
+/*
+
+
+SNOL
+
+THE ADD DOESNT ACTUALLY EXIST FOR THIS ASSIGNMENT !!! JUST A PLACEHOLDER
+
+*/
+
 #include <iostream>
 #include <stack>
 #include <string>
@@ -6,6 +15,9 @@
 #include <limits>
 
 using namespace std;
+
+//we get, BEG PRINT EXIT! NUMBER VARIABLE OPERATOR
+
 
 // Function to split the command into tokens
 vector<string> tokenize(const string& command) {
@@ -21,12 +33,14 @@ vector<string> tokenize(const string& command) {
 // Function to handle the HELP command
 void printHelp() {
     cout << "Available commands:\n";
-    cout << "ADD <number>    - Add the number to the current value\n";
-    cout << "HELP            - Display this help message\n";
-    cout << "EXIT            - Exit the SNOL environment\n";
+    cout << "HELP               - Display this help message\n";
+    cout << "BEG <variable>     - Input value for given var\n";
+    cout << "PRINT <variable>   - Display value of given variable\n";
+    cout << "ADD <number>       - Add the number to the current value\n"; //to remove after use
+    cout << "EXIT               - Exit the SNOL environment\n";
 }
 
-// Function to handle the ADD command
+// handles ADD, removing this later just for reference
 void add(stack<int>& valueStack, const string& numberStr) {
     int number = stoi(numberStr);
     if (valueStack.empty()) {
@@ -39,10 +53,16 @@ void add(stack<int>& valueStack, const string& numberStr) {
     cout << "Current value: " << valueStack.top();
 }
 
+void beg(){}
+
+void print(){}
+
+
+
 int main() {
     cout << "The SNOL Environment is now active, you may proceed with giving your commands. Enter HELP for full command list";
     
-    stack<int> valueStack;
+    stack<int> valueStack; //add stack, delete later
 
     while (true) {
         cout << "\n\nEnter Command: ";
@@ -51,25 +71,38 @@ int main() {
 
         vector<string> tokens = tokenize(command);
 
-        if (tokens.empty()) continue;
+        if (tokens.empty()){
+            cout << "\n\nPlease enter a command.";
+            continue;
+        }  
 
         string cmd = tokens[0];
 
-        if (cmd == "HELP") {
-            printHelp();
-        } else if (cmd == "ADD") {
-            if (tokens.size() != 2) {
-                cout << "Error: ADD command requires a single operand.";
-            } else {
+        switch(cmd){
+            case "HELP":
+                printHelp();
+                break;
+            case "BEG":
+                if (tokens.size() != 2) {
+                    cout << "Error: BEG. Wait for the SNOL to ask for value of variable.";
+                }
+                else beg();
+                break;
+            case "PRINT":
+                if (tokens.size() != 2) {
+                    cout << "Error: PRINT. Cannot print multiple variables.";
+                }
+                else print(tokens[1]);
+                break;
+            case "ADD": //placeholder
                 add(valueStack, tokens[1]);
-            }
-        } else if (cmd == "EXIT") {
-            break;
-        } else {
-            cout << "Unknown command. Enter HELP for a list of available commands.";
+                break;
+            case "EXIT!":
+                cout << "\n\nExiting SNOL...";
+                return 0;
+            default:
+                cout << "Unknown command. Enter HELP for a list of available commands.";
+                break;
         }
-    }
 
-    cout << "Exiting the SNOL Environment. Goodbye!";
-    return 0;
 }
