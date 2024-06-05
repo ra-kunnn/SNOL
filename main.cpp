@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <sstream>
 #include <limits>
+#include <cmath>
 
 using namespace std;
 
@@ -70,7 +71,6 @@ void printHelp() {
 unordered_map<string, pair<string, float>> variables;
 
 // Function to handle the BEG command
-// Function to handle the BEG command
 void beg(const string& varName) {
     cout << "SNOL> Please enter value for [" << varName << "]\nInput: ";
     string input;
@@ -96,10 +96,74 @@ void print(const string& varName) {
     }
 }
 
-// Placeholder for variable assignment
+// Function to evaluate an arithmetic expression
+float evaluateExpression(const string& var1, const string& op, const string& var2) {
+    float value1, value2;
+
+    // Check if var1 and var2 are numbers or variables
+    if (variables.find(var1) != variables.end()) {
+        value1 = variables[var1].second;
+    } else {
+        value1 = stof(var1);
+    }
+
+    if (variables.find(var2) != variables.end()) {
+        value2 = variables[var2].second;
+    } else {
+        value2 = stof(var2);
+    }
+
+    // Perform the operation
+    if (op == "+") return value1 + value2;
+    if (op == "-") return value1 - value2;
+    if (op == "*") return value1 * value2;
+    if (op == "/") return value1 / value2;
+    if (op == "%") return fmod(value1, value2);
+
+    throw invalid_argument("Invalid operator");
+}
+
+// Function to handle the assignment command
 void assignVar(unordered_map<string, pair<string, float>>& variables, const string& givenVar, const vector<Token>& tokens) {
-    // Implementation of assignment operation
-    // Example: var = 10 or var = var2 + 5
+    if (tokens.size() == 3 && tokens[1].type == ASSIGNMENT && tokens[2].type == NUMBER) {
+        float value = stof(tokens[2].value);
+        if (tokens[2].value.find('.') != string::npos) {
+            variables[givenVar] = {"float", value};
+        } else {
+            variables[givenVar] = {"int", value};
+        }
+    } else if (tokens.size() == 5 && tokens[1].type == ASSIGNMENT && tokens[3].type == OPERATOR) {
+        string var1 = tokens[2].value;
+        string op = tokens[3].value;
+        string var2 = tokens[4].value;
+
+        if (variables.find(var1) == variables.end() && !regex_match(var1, regex("\\d*\\.?\\d+"))) {
+            cout << "Error: Variable " << var1 << " not found." << endl;
+            return;
+        }
+
+        if (variables.find(var2) == variables.end() && !regex_match(var2, regex("\\d*\\.?\\d+"))) {
+            cout << "Error: Variable " << var2 << " not found." << endl;
+            return;
+        }
+
+        string type1 = (variables.find(var1) != variables.end()) ? variables[var1].first : ((var1.find('.') != string::npos) ? "float" : "int");
+        string type2 = (variables.find(var2) != variables.end()) ? variables[var2].first : ((var2.find('.') != string::npos) ? "float" : "int");
+
+        if (type1 != type2) {
+            cout << "SNOL> Error! Operands must be of the same type in an arithmetic operation!" << endl;
+            return;
+        }
+
+        try {
+            float result = evaluateExpression(var1, op, var2);
+            variables[givenVar] = {type1, result};
+        } catch (const invalid_argument& e) {
+            cout << "Error: " << e.what() << endl;
+        }
+    } else {
+        cout << "Unknown command. Enter HELP for a list of available commands." << endl;
+    }
 }
 
 int main() {
