@@ -1,18 +1,12 @@
-/*
-
-SNOL
-
-*/
-
 #include <iostream>
 #include <string>
 #include <vector>
 #include <regex>
 #include <unordered_map>
+#include <sstream>
+#include <limits>
 
 using namespace std;
-
-//we get, BEG PRINT EXIT! NUMBER VARIABLE OPERATORS PARENTHESIS
 
 enum TokenType {
     COMMAND,
@@ -24,7 +18,6 @@ enum TokenType {
     RPAREN,
     UNKNOWN
 };
-
 
 struct Token {
     TokenType type;
@@ -63,7 +56,6 @@ vector<Token> tokenize(const string& command) {
     return tokens;
 }
 
-
 // Function to handle the HELP command
 void printHelp() {
     cout << "Available commands:\n";
@@ -74,19 +66,44 @@ void printHelp() {
     cout << "EXIT!                                   - Exit the SNOL environment\n";
 }
 
-void assignVar(const unordered_map<string, float>& variables, const string& givenVar, const vector<Token>& tokens){} //variable assignment ex. num = 10+2
+// Storage for variables and their types
+unordered_map<string, pair<string, float>> variables;
 
-void beg(){} //beg command BEG var, then ask input var>
+// Function to handle the BEG command
+void beg(const string& varName) {
+    cout << "Enter value for " << varName << ": ";
+    string input;
+    getline(cin, input);
+    stringstream ss(input);
+    float value;
+    ss >> value;
+    
+    // Check if the input is a float or int
+    if (input.find('.') != string::npos) {
+        variables[varName] = {"float", value};
+    } else {
+        variables[varName] = {"int", value};
+    }
+}
 
-void print(const string& givenVar){} //prints variable value n name
+// Function to handle the PRINT command
+void print(const string& varName) {
+    if (variables.find(varName) != variables.end()) {
+        cout << varName << " (" << variables[varName].first << ") = " << variables[varName].second << endl;
+    } else {
+        cout << "Error: Variable " << varName << " not found." << endl;
+    }
+}
 
-
+// Placeholder for variable assignment
+void assignVar(unordered_map<string, pair<string, float>>& variables, const string& givenVar, const vector<Token>& tokens) {
+    // Implementation of assignment operation
+    // Example: var = 10 or var = var2 + 5
+}
 
 int main() {
     cout << "The SNOL Environment is now active, you may proceed with giving your commands. Enter HELP for full command list";
     
-    unordered_map<string, float> variables; //stores key value pairs, so like num = var, it assigns the string to the float (w/c already includes the errm.... iint)
-
     while (true) {
         cout << "\n\nEnter Command: ";
         string command;
@@ -94,7 +111,7 @@ int main() {
 
         vector<Token> tokens = tokenize(command);
 
-        if (tokens.empty()){
+        if (tokens.empty()) {
             cout << "\n\nPlease enter a command.";
             continue;
         }  
@@ -107,19 +124,20 @@ int main() {
             cout << "\n\nExiting SNOL...";
             break;
         } else if (cmd == "BEG") {
-            //idk what variables ud need... maybe the token[1].value for the varname
-            beg();
-        } else if (cmd == "PRINT") {
-            // prints the variable value  lol
             if (tokens.size() != 2) {
-                cout << "Error: PRINT. Cannot print multiple variables.";
+                cout << "Error: BEG command requires exactly one variable name.";
             } else {
-                print(tokens[1].value); // token.value this gives print the variable name
+                beg(tokens[1].value);
             }
-        } else if (tokens[0].type == VARIABLE && tokens.size() > 1 && tokens[1].type == OPERATOR) {
+        } else if (cmd == "PRINT") {
+            if (tokens.size() != 2) {
+                cout << "Error: PRINT command requires exactly one variable name.";
+            } else {
+                print(tokens[1].value);
+            }
+        } else if (tokens[0].type == VARIABLE && tokens.size() > 1 && tokens[1].type == ASSIGNMENT) {
             // Handle variable assignment
             assignVar(variables, tokens[0].value, tokens); 
-            //variables is the unordered map of the given var(unoordered map is basically sth that assigns to variables idk isearch mo lng), token0 is name of var, tokens is all the tokens in given command. tho idk bahala u ano need mo
         } else {
             cout << "Unknown command. Enter HELP for a list of available commands.";
         }
