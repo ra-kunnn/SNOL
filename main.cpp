@@ -53,6 +53,24 @@ vector<Token> tokenize(const string& command) {
             tokens.push_back({UNKNOWN, token});
         }
     }
+
+    // Check for unknown words
+    string remaining = command;
+    for (const auto& token : tokens) {
+        size_t pos = remaining.find(token.value);
+        if (pos != string::npos) {
+            remaining.erase(pos, token.value.length());
+        }
+    }
+    remaining = regex_replace(remaining, regex("\\s+"), "");
+
+    for (char c : remaining) {
+        if (!isspace(c)) {
+            cout << "Unknown word [" << remaining << "]" << endl;
+            tokens.clear();
+            break;
+        }
+    }
     
     return tokens;
 }
@@ -78,7 +96,13 @@ void beg(const string& varName) {
     stringstream ss(input);
     float value;
     ss >> value;
-    
+
+    // Check for invalid number format
+    if (ss.fail() || !ss.eof()) {
+        cout << "Invalid number format [" << input << "]" << endl;
+        return;
+    }
+
     // Check if the input is a float or int
     if (input.find('.') != string::npos) {
         variables[varName] = {"float", value};
@@ -92,7 +116,7 @@ void print(const string& varName) {
     if (variables.find(varName) != variables.end()) {
         cout << "SNOL> [" << varName << "] = " << variables[varName].second << endl;
     } else {
-        cout << "Error: Variable " << varName << " not found." << endl;
+        cout << "Undefined variable [" << varName << "]" << endl;
     }
 }
 
@@ -138,12 +162,12 @@ void assignVar(unordered_map<string, pair<string, float>>& variables, const stri
         string var2 = tokens[4].value;
 
         if (variables.find(var1) == variables.end() && !regex_match(var1, regex("\\d*\\.?\\d+"))) {
-            cout << "Error: Variable " << var1 << " not found." << endl;
+            cout << "Undefined variable [" << var1 << "]" << endl;
             return;
         }
 
         if (variables.find(var2) == variables.end() && !regex_match(var2, regex("\\d*\\.?\\d+"))) {
-            cout << "Error: Variable " << var2 << " not found." << endl;
+            cout << "Undefined variable [" << var2 << "]" << endl;
             return;
         }
 
@@ -163,6 +187,32 @@ void assignVar(unordered_map<string, pair<string, float>>& variables, const stri
         }
     } else {
         cout << "Unknown command. Enter HELP for a list of available commands." << endl;
+    }
+}
+
+// Function to handle non-assignment operations
+void handleOperation(const vector<Token>& tokens) {
+    if (tokens.size() == 3 && tokens[1].type == OPERATOR) {
+        string var1 = tokens[0].value;
+        string op = tokens[1].value;
+        string var2 = tokens[2].value;
+
+        if (variables.find(var1) == variables.end() && !regex_match(var1, regex("\\d*\\.?\\d+"))) {
+            cout << "Undefined variable [" << var1 << "]" << endl;
+            return;
+        }
+
+        if (variables.find(var2) == variables.end() && !regex_match(var2, regex("\\d*\\.?\\d+"))) {
+            cout << "Undefined variable [" << var2 << "]" << endl;
+            return;
+        }
+
+        string type1 = (variables.find(var1) != variables.end()) ? variables[var1].first : ((var1.find('.') != string::npos) ? "float" : "int");
+        string type2 = (variables.find(var2) != variables.end()) ? variables[var2].first : ((var2.find('.') != string::npos) ? "float" : "int");
+
+        if (type1 != type2) {
+            cout << "SNOL> Error! Operands must be of the same type in an arithmetic operation!" << endl;
+        }
     }
 }
 
@@ -203,6 +253,9 @@ int main() {
         } else if (tokens[0].type == VARIABLE && tokens.size() > 1 && tokens[1].type == ASSIGNMENT) {
             // Handle variable assignment
             assignVar(variables, tokens[0].value, tokens); 
+        } else if (tokens.size() == 3 && tokens[1].type == OPERATOR) {
+            // Handle non-assignment operations
+            handleOperation(tokens);
         } else {
             cout << "Unknown command. Enter HELP for a list of available commands.";
         }
