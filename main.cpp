@@ -70,8 +70,9 @@ void printHelp() {
 unordered_map<string, pair<string, float>> variables;
 
 // Function to handle the BEG command
+// Function to handle the BEG command
 void beg(const string& varName) {
-    cout << "Enter value for " << varName << ": ";
+    cout << "SNOL> Please enter value for [" << varName << "]\nInput: ";
     string input;
     getline(cin, input);
     stringstream ss(input);
@@ -89,7 +90,7 @@ void beg(const string& varName) {
 // Function to handle the PRINT command
 void print(const string& varName) {
     if (variables.find(varName) != variables.end()) {
-        cout << varName << " (" << variables[varName].first << ") = " << variables[varName].second << endl;
+        cout << "SNOL> [" << varName << "] = " << variables[varName].second << endl;
     } else {
         cout << "Error: Variable " << varName << " not found." << endl;
     }
