@@ -6,6 +6,7 @@
 #include <sstream>
 #include <limits>
 #include <cmath>
+#include <stack>
 
 using namespace std;
 
@@ -27,7 +28,7 @@ struct Token {
 
 vector<Token> tokenize(const string& command) {
     vector<Token> tokens;
-    regex tokenPattern("(BEG|PRINT|HELP|EXIT!|[a-zA-Z_][a-zA-Z0-9_]*|\\d*\\.?\\d+|=|\\+|\\-|\\*|\\/|\\%|\\(|\\))");
+    regex tokenPattern("(BEG|PRINT|HELP|EXIT!|[a-zA-Z_][a-zA-Z0-9_]*|[-]?\\d*\\.?\\d+|=|\\+|\\-|\\*|\\/|\\%|\\(|\\))");
     auto words_begin = sregex_iterator(command.begin(), command.end(), tokenPattern);
     auto words_end = sregex_iterator();
 
@@ -39,7 +40,7 @@ vector<Token> tokenize(const string& command) {
             tokens.push_back({COMMAND, token});
         } else if (regex_match(token, regex("[a-zA-Z_][a-zA-Z0-9_]*"))) {
             tokens.push_back({VARIABLE, token});
-        } else if (regex_match(token, regex("\\d*\\.?\\d+"))) {
+        } else if (regex_match(token, regex("[-]?\\d*\\.?\\d+"))) {
             tokens.push_back({NUMBER, token});
         } else if (token == "=") {
             tokens.push_back({ASSIGNMENT, token});
@@ -90,6 +91,12 @@ unordered_map<string, pair<string, float>> variables;
 
 // Function to handle the BEG command
 void beg(const string& varName) {
+    // Validate variable name
+    if (!regex_match(varName, regex("^[a-zA-Z_][a-zA-Z0-9_]*$"))) {
+        cout << "Error: Invalid variable name [" << varName << "]" << endl;
+        return;
+    }
+    
     cout << "SNOL> Please enter value for [" << varName << "]\nInput: ";
     string input;
     getline(cin, input);
@@ -120,70 +127,120 @@ void print(const string& varName) {
     }
 }
 
-// Function to evaluate an arithmetic expression
-float evaluateExpression(const string& var1, const string& op, const string& var2) {
-    float value1, value2;
+// Helper function to get the precedence of an operator
+int getPrecedence(const string& op) {
+    if (op == "+" || op == "-") return 1;
+    if (op == "*" || op == "/" || op == "%") return 2;
+    return 0;
+}
 
-    // Check if var1 and var2 are numbers or variables
-    if (variables.find(var1) != variables.end()) {
-        value1 = variables[var1].second;
-    } else {
-        value1 = stof(var1);
-    }
-
-    if (variables.find(var2) != variables.end()) {
-        value2 = variables[var2].second;
-    } else {
-        value2 = stof(var2);
-    }
-
-    // Perform the operation
-    if (op == "+") return value1 + value2;
-    if (op == "-") return value1 - value2;
-    if (op == "*") return value1 * value2;
-    if (op == "/") return value1 / value2;
-    if (op == "%") return fmod(value1, value2);
-
+// Helper function to perform arithmetic operations
+float applyOperator(float a, float b, const string& op) {
+    if (op == "+") return a + b;
+    if (op == "-") return a - b;
+    if (op == "*") return a * b;
+    if (op == "/") return a / b;
+    if (op == "%") return fmod(a, b);
     throw invalid_argument("Invalid operator");
+}
+
+// Function to evaluate an arithmetic expression using the Shunting Yard algorithm and the Reverse Polish Notation (RPN) evaluation
+float evaluateExpression(const vector<Token>& tokens, const string& type) {
+    stack<float> values;
+    stack<string> operators;
+
+    for (const auto& token : tokens) {
+        if (token.type == NUMBER) {
+            float value = stof(token.value);
+            values.push(value);
+        } else if (token.type == VARIABLE) {
+            if (variables.find(token.value) == variables.end()) {
+                cout << "Undefined variable [" << token.value << "]" << endl;
+                throw invalid_argument("Undefined variable");
+            }
+            values.push(variables[token.value].second);
+        } else if (token.type == OPERATOR) {
+            while (!operators.empty() && getPrecedence(operators.top()) >= getPrecedence(token.value)) {
+                float b = values.top();
+                values.pop();
+                float a = values.top();
+                values.pop();
+                string op = operators.top();
+                operators.pop();
+                values.push(applyOperator(a, b, op));
+            }
+            operators.push(token.value);
+        } else if (token.type == LPAREN) {
+            operators.push(token.value);
+        } else if (token.type == RPAREN) {
+            while (!operators.empty() && operators.top() != "(") {
+                float b = values.top();
+                values.pop();
+                float a = values.top();
+                values.pop();
+                string op = operators.top();
+                operators.pop();
+                values.push(applyOperator(a, b, op));
+            }
+            operators.pop(); // Pop the left parenthesis
+        }
+    }
+
+    while (!operators.empty()) {
+        float b = values.top();
+        values.pop();
+        float a = values.top();
+        values.pop();
+        string op = operators.top();
+        operators.pop();
+        values.push(applyOperator(a, b, op));
+    }
+
+    return values.top();
 }
 
 // Function to handle the assignment command
 void assignVar(unordered_map<string, pair<string, float>>& variables, const string& givenVar, const vector<Token>& tokens) {
-    if (tokens.size() == 3 && tokens[1].type == ASSIGNMENT && tokens[2].type == NUMBER) {
-        float value = stof(tokens[2].value);
-        if (tokens[2].value.find('.') != string::npos) {
-            variables[givenVar] = {"float", value};
-        } else {
-            variables[givenVar] = {"int", value};
-        }
-    } else if (tokens.size() == 5 && tokens[1].type == ASSIGNMENT && tokens[3].type == OPERATOR) {
-        string var1 = tokens[2].value;
-        string op = tokens[3].value;
-        string var2 = tokens[4].value;
+    if (tokens.size() >= 3 && tokens[1].type == ASSIGNMENT) {
+        vector<Token> exprTokens(tokens.begin() + 2, tokens.end());
 
-        if (variables.find(var1) == variables.end() && !regex_match(var1, regex("\\d*\\.?\\d+"))) {
-            cout << "Undefined variable [" << var1 << "]" << endl;
+        // Check if expression is valid
+        if (exprTokens.empty() || (exprTokens[0].type != NUMBER && exprTokens[0].type != VARIABLE)) {
+            cout << "Unknown command. Enter HELP for a list of available commands." << endl;
             return;
         }
 
-        if (variables.find(var2) == variables.end() && !regex_match(var2, regex("\\d*\\.?\\d+"))) {
-            cout << "Undefined variable [" << var2 << "]" << endl;
-            return;
+        // Check for mismatched types in the expression
+        string type = "int";
+        for (const auto& token : exprTokens) {
+            if (token.type == NUMBER && token.value.find('.') != string::npos) {
+                type = "float";
+                break;
+            } else if (token.type == VARIABLE && variables.find(token.value) != variables.end() && variables[token.value].first == "float") {
+                type = "float";
+                break;
+            }
         }
 
-        string type1 = (variables.find(var1) != variables.end()) ? variables[var1].first : ((var1.find('.') != string::npos) ? "float" : "int");
-        string type2 = (variables.find(var2) != variables.end()) ? variables[var2].first : ((var2.find('.') != string::npos) ? "float" : "int");
-
-        if (type1 != type2) {
-            cout << "SNOL> Error! Operands must be of the same type in an arithmetic operation!" << endl;
-            return;
+        // Validate that the expression does not contain invalid sequences
+        bool lastWasOperator = false;
+        for (const auto& token : exprTokens) {
+            if (token.type == OPERATOR) {
+                if (lastWasOperator) {
+                    cout << "Unknown command. Enter HELP for a list of available commands." << endl;
+                    return;
+                }
+                lastWasOperator = true;
+            } else {
+                lastWasOperator = false;
+            }
         }
 
         try {
-            float result = evaluateExpression(var1, op, var2);
-            variables[givenVar] = {type1, result};
+            float result = evaluateExpression(exprTokens, type);
+            variables[givenVar] = {type, result};
         } catch (const invalid_argument& e) {
-            cout << "Error: " << e.what() << endl;
+            // Error message already printed, do nothing
         }
     } else {
         cout << "Unknown command. Enter HELP for a list of available commands." << endl;
@@ -192,33 +249,54 @@ void assignVar(unordered_map<string, pair<string, float>>& variables, const stri
 
 // Function to handle non-assignment operations
 void handleOperation(const vector<Token>& tokens) {
-    if (tokens.size() == 3 && tokens[1].type == OPERATOR) {
-        string var1 = tokens[0].value;
-        string op = tokens[1].value;
-        string var2 = tokens[2].value;
+    if (tokens.size() >= 3 && tokens[1].type == OPERATOR) {
+        vector<Token> exprTokens(tokens.begin(), tokens.end());
 
-        if (variables.find(var1) == variables.end() && !regex_match(var1, regex("\\d*\\.?\\d+"))) {
-            cout << "Undefined variable [" << var1 << "]" << endl;
+        // Check if expression is valid
+        if (exprTokens.empty() || (exprTokens[0].type != NUMBER && exprTokens[0].type != VARIABLE)) {
+            cout << "Unknown command. Enter HELP for a list of available commands." << endl;
             return;
         }
 
-        if (variables.find(var2) == variables.end() && !regex_match(var2, regex("\\d*\\.?\\d+"))) {
-            cout << "Undefined variable [" << var2 << "]" << endl;
-            return;
+        // Check for mismatched types in the expression
+        string type = "int";
+        for (const auto& token : exprTokens) {
+            if (token.type == NUMBER && token.value.find('.') != string::npos) {
+                type = "float";
+                break;
+            } else if (token.type == VARIABLE && variables.find(token.value) != variables.end() && variables[token.value].first == "float") {
+                type = "float";
+                break;
+            }
         }
 
-        string type1 = (variables.find(var1) != variables.end()) ? variables[var1].first : ((var1.find('.') != string::npos) ? "float" : "int");
-        string type2 = (variables.find(var2) != variables.end()) ? variables[var2].first : ((var2.find('.') != string::npos) ? "float" : "int");
-
-        if (type1 != type2) {
-            cout << "SNOL> Error! Operands must be of the same type in an arithmetic operation!" << endl;
+        // Validate that the expression does not contain invalid sequences
+        bool lastWasOperator = false;
+        for (const auto& token : exprTokens) {
+            if (token.type == OPERATOR) {
+                if (lastWasOperator) {
+                    cout << "Unknown command. Enter HELP for a list of available commands." << endl;
+                    return;
+                }
+                lastWasOperator = true;
+            } else {
+                lastWasOperator = false;
+            }
         }
+
+        try {
+            evaluateExpression(exprTokens, type);
+        } catch (const invalid_argument& e) {
+            // Error message already printed, do nothing
+        }
+    } else {
+        cout << "Unknown command. Enter HELP for a list of available commands." << endl;
     }
 }
 
 int main() {
     cout << "The SNOL Environment is now active, you may proceed with giving your commands. Enter HELP for full command list";
-    
+
     while (true) {
         cout << "\n\nEnter Command: ";
         string command;
@@ -253,7 +331,7 @@ int main() {
         } else if (tokens[0].type == VARIABLE && tokens.size() > 1 && tokens[1].type == ASSIGNMENT) {
             // Handle variable assignment
             assignVar(variables, tokens[0].value, tokens); 
-        } else if (tokens.size() == 3 && tokens[1].type == OPERATOR) {
+        } else if (tokens.size() >= 3 && tokens[1].type == OPERATOR) {
             // Handle non-assignment operations
             handleOperation(tokens);
         } else {
