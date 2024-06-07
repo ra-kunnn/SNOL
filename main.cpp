@@ -372,13 +372,17 @@ int main() {
             break;
         } else if (cmd == "BEG") {
             if (tokens.size() != 2) {
-                cout << "SNOL> Error! BEG command requires exactly one variable name.";
+                cout << "SNOL> Error! BEG command requires exactly one variable name or the variable name is invalid.";
+            } else if(tokens[1].type == COMMAND){
+                cout << "SNOL> Error! keywords cannot be used as variable!";
             } else {
                 beg(tokens[1].value);
             }
         } else if (cmd == "PRINT") {
             if (tokens.size() != 2) {
-                cout << "SNOL> Error! PRINT command requires exactly one variable name.";
+                cout << "SNOL> Error! PRINT command requires exactly one variable name or the variable name is invalid.";
+            }else if(tokens[1].type == COMMAND){
+                cout << "SNOL> Error! keywords cannot be used as variable!";
             } else {
                 print(tokens[1].value);
             }
