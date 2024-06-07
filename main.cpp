@@ -116,7 +116,7 @@ void print(const string& varName) {
     if (variables.find(varName) != variables.end()) {
         cout << "SNOL> [" << varName << "] = " << variables[varName].second << endl;
     } else {
-        cout << "Undefined variable [" << varName << "]" << endl;
+        cout << "SNOL> Error! [" << varName << "] is not defined!" << endl;
     }
 }
 
@@ -162,12 +162,12 @@ void assignVar(unordered_map<string, pair<string, float>>& variables, const stri
         string var2 = tokens[4].value;
 
         if (variables.find(var1) == variables.end() && !regex_match(var1, regex("\\d*\\.?\\d+"))) {
-            cout << "Undefined variable [" << var1 << "]" << endl;
+            cout << "SNOL> Error! [" << var1 << "] is not defined!" << endl;
             return;
         }
 
         if (variables.find(var2) == variables.end() && !regex_match(var2, regex("\\d*\\.?\\d+"))) {
-            cout << "Undefined variable [" << var2 << "]" << endl;
+            cout << "SNOL> Error! [" << var2 << "] is not defined!" << endl;
             return;
         }
 
@@ -186,7 +186,7 @@ void assignVar(unordered_map<string, pair<string, float>>& variables, const stri
             cout << "Error: " << e.what() << endl;
         }
     } else {
-        cout << "Unknown command. Enter HELP for a list of available commands." << endl;
+        cout << "SNOL> Unknown command! Does not match any valid command of the language. Enter HELP for a list of available commands." << endl;
     }
 }
 
@@ -198,12 +198,12 @@ void handleOperation(const vector<Token>& tokens) {
         string var2 = tokens[2].value;
 
         if (variables.find(var1) == variables.end() && !regex_match(var1, regex("\\d*\\.?\\d+"))) {
-            cout << "Undefined variable [" << var1 << "]" << endl;
+            cout << "SNOL> Error! [" << var1 << "] is not defined!" << endl;
             return;
         }
 
         if (variables.find(var2) == variables.end() && !regex_match(var2, regex("\\d*\\.?\\d+"))) {
-            cout << "Undefined variable [" << var2 << "]" << endl;
+            cout << "SNOL> Error! [" << var2 << "] is not defined!" << endl;
             return;
         }
 
@@ -236,7 +236,7 @@ int main() {
         if (cmd == "HELP") {
             printHelp();
         } else if (cmd == "EXIT!") {
-            cout << "\n\nExiting SNOL...";
+            cout << "\n\nInterpreter is now terminated...";
             break;
         } else if (cmd == "BEG") {
             if (tokens.size() != 2) {
@@ -257,7 +257,7 @@ int main() {
             // Handle non-assignment operations
             handleOperation(tokens);
         } else {
-            cout << "Unknown command. Enter HELP for a list of available commands.";
+            cout << "SNOL> Unknown command! Does not match any valid command of the language. Enter HELP for a list of available commands.";
         }
     }
 
