@@ -93,7 +93,7 @@ unordered_map<string, pair<string, float>> variables;
 void beg(const string& varName) {
     // Validate variable name
     if (!regex_match(varName, regex("^[a-zA-Z_][a-zA-Z0-9_]*$"))) {
-        cout << "Error: Invalid variable name [" << varName << "]" << endl;
+        cout << "SNOL> Error: Invalid variable name [" << varName << "] Enter HELP for a list of available commands." << endl;
         return;
     }
     
@@ -106,7 +106,7 @@ void beg(const string& varName) {
 
     // Check for invalid number format
     if (ss.fail() || !ss.eof()) {
-        cout << "Invalid number format [" << input << "]" << endl;
+        cout << "SNOL> Invalid number format [" << input << "] Enter HELP for a list of available commands." << endl;
         return;
     }
 
@@ -123,7 +123,7 @@ void print(const string& varName) {
     if (variables.find(varName) != variables.end()) {
         cout << "SNOL> [" << varName << "] = " << variables[varName].second << endl;
     } else {
-        cout << "Undefined variable [" << varName << "]" << endl;
+        cout << "SNOL> Undefined variable [" << varName << "] Enter HELP for a list of available commands." << endl;
     }
 }
 
@@ -141,7 +141,7 @@ float applyOperator(float a, float b, const string& op) {
     if (op == "*") return a * b;
     if (op == "/") return a / b;
     if (op == "%") return fmod(a, b);
-    throw invalid_argument("Invalid operator");
+    throw invalid_argument("SNOL> Invalid operator");
 }
 
 // Function to check for balanced parentheses
@@ -178,7 +178,7 @@ float evaluateExpression(const vector<Token>& tokens, const string& type) {
             }
         } else if (token.type == VARIABLE) {
             if (variables.find(token.value) == variables.end()) {
-                cout << "Undefined variable [" << token.value << "]" << endl;
+                cout << "SNOL> Undefined variable [" << token.value << "] Enter HELP for a list of available commands." << endl;
                 throw invalid_argument("Undefined variable");
             }
             values.push(variables[token.value].second);
@@ -189,7 +189,7 @@ float evaluateExpression(const vector<Token>& tokens, const string& type) {
             }
         } else if (token.type == OPERATOR) {
             if (token.value == "%" && (containsFloat || (!values.empty() && modf(values.top(), &values.top()) != 0))) {
-                cout << "Modulo operation is not allowed on floats." << endl;
+                cout << "SNOL> Modulo operation is not allowed on floats. Enter HELP for a list of available commands." << endl;
                 throw invalid_argument("Modulo on floats");
             }
             while (!operators.empty() && getPrecedence(operators.top()) >= getPrecedence(token.value)) {
@@ -215,8 +215,8 @@ float evaluateExpression(const vector<Token>& tokens, const string& type) {
                 values.push(applyOperator(a, b, op));
             }
             if (operators.empty() || operators.top() != "(") {
-                cout << "Mismatched parentheses" << endl;
-                throw invalid_argument("Mismatched parentheses");
+                cout << "SNOL> Mismatched parentheses. Enter HELP for a list of available commands." << endl;
+                throw invalid_argument("Mismatched parentheses.");
             }
             operators.pop(); // Pop the left parenthesis
         }
@@ -269,7 +269,7 @@ void assignVar(unordered_map<string, pair<string, float>>& variables, const stri
         for (const auto& token : exprTokens) {
             if (token.type == OPERATOR) {
                 if (lastWasOperator) {
-                    cout << "Unknown command. Enter HELP for a list of available commands." << endl;
+                    cout << "SNOL> Unknown command! Does not match any valid command of the language. Enter HELP for a list of available commands." << endl;
                     return;
                 }
                 lastWasOperator = true;
@@ -280,7 +280,7 @@ void assignVar(unordered_map<string, pair<string, float>>& variables, const stri
 
         // Check for balanced parentheses
         if (!checkParentheses(exprTokens)) {
-            cout << "Mismatched parentheses" << endl;
+            cout << "SNOL> Mismatched parentheses. Enter HELP for a list of available commands." << endl;
             return;
         }
 
@@ -291,7 +291,7 @@ void assignVar(unordered_map<string, pair<string, float>>& variables, const stri
             // Error message already printed, do nothing
         }
     } else {
-        cout << "Unknown command. Enter HELP for a list of available commands." << endl;
+        cout << "SNOL>Unknown command. Enter HELP for a list of available commands." << endl;
     }
 }
 
@@ -302,7 +302,7 @@ void handleOperation(const vector<Token>& tokens) {
 
         // Check if expression is valid
         if (exprTokens.empty() || (exprTokens[0].type != NUMBER && exprTokens[0].type != VARIABLE && exprTokens[0].type != LPAREN)) {
-            cout << "Unknown command. Enter HELP for a list of available commands." << endl;
+            cout << "SNOL> Unknown command! Does not match any valid command of the language. Enter HELP for a list of available commands." << endl;
             return;
         }
 
@@ -323,7 +323,7 @@ void handleOperation(const vector<Token>& tokens) {
         for (const auto& token : exprTokens) {
             if (token.type == OPERATOR) {
                 if (lastWasOperator) {
-                    cout << "Unknown command. Enter HELP for a list of available commands." << endl;
+                    cout << "SNOL> Unknown command! Does not match any valid command of the language. Enter HELP for a list of available commands." << endl;
                     return;
                 }
                 lastWasOperator = true;
@@ -344,7 +344,7 @@ void handleOperation(const vector<Token>& tokens) {
             // Error message already printed, do nothing
         }
     } else {
-        cout << "Unknown command. Enter HELP for a list of available commands." << endl;
+        cout << "SNOL>Unknown command. Enter HELP for a list of available commands." << endl;
     }
 }
 
@@ -384,14 +384,37 @@ int main() {
             }
         } else if (tokens[0].type == VARIABLE && tokens.size() > 1 && tokens[1].type == ASSIGNMENT) {
             // Handle variable assignment
-            assignVar(variables, tokens[0].value, tokens);
+			bool hasCommand = false;
+			    for (const auto& token : tokens) {
+			        if (token.type == COMMAND) {
+			            hasCommand = true;
+			            break;
+			        }
+			    }
+			    if (hasCommand) {
+			        cout << "SNOL> Unknown command! Does not match any valid command of the language. Enter HELP for a list of available commands." << endl;
+			    } else {
+			        assignVar(variables, tokens[0].value, tokens);
+			    }            
         } else if (tokens.size() >= 3 && tokens[1].type == OPERATOR) {
             // Handle non-assignment operations
-            handleOperation(tokens);
+			bool hasCommand = false;
+			    for (const auto& token : tokens) {
+			        if (token.type == COMMAND) {
+			            hasCommand = true;
+			            break;
+			        }
+			    }
+			    if (hasCommand) {
+			        cout << "SNOL> Unknown command! Does not match any valid command of the language. Enter HELP for a list of available commands." << endl;
+			    } else {
+			        handleOperation(tokens);
+			    }      
+            
         } else if (tokens[0].type == VARIABLE && tokens.size() == 1) {
             continue;
         } else {
-            cout << "Unknown command. Enter HELP for a list of available commands.";
+            cout << "SNOL>Unknown command. Enter HELP for a list of available commands.";
         }
     }
 
