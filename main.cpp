@@ -123,7 +123,7 @@ void print(const string& varName) {
     if (variables.find(varName) != variables.end()) {
         cout << "SNOL> [" << varName << "] = " << variables[varName].second << endl;
     } else {
-        cout << "SNOL> Undefined variable [" << varName << "] Enter HELP for a list of available commands." << endl;
+        cout << "SNOL> Error! [" << varName << "] is not defined! Enter HELP for a list of available commands." << endl;
     }
 }
 
@@ -178,7 +178,7 @@ float evaluateExpression(const vector<Token>& tokens, const string& type) {
             }
         } else if (token.type == VARIABLE) {
             if (variables.find(token.value) == variables.end()) {
-                cout << "SNOL> Undefined variable [" << token.value << "] Enter HELP for a list of available commands." << endl;
+                cout << "SNOL> Error! [" << token.value << "] is not defined! Enter HELP for a list of available commands." << endl;
                 throw invalid_argument("Undefined variable");
             }
             values.push(variables[token.value].second);
@@ -189,7 +189,7 @@ float evaluateExpression(const vector<Token>& tokens, const string& type) {
             }
         } else if (token.type == OPERATOR) {
             if (token.value == "%" && (containsFloat || (!values.empty() && modf(values.top(), &values.top()) != 0))) {
-                cout << "SNOL> Modulo operation is not allowed on floats. Enter HELP for a list of available commands." << endl;
+                cout << "SNOL> Error! Modulo operation is not allowed on floats. Enter HELP for a list of available commands." << endl;
                 throw invalid_argument("Modulo on floats");
             }
             while (!operators.empty() && getPrecedence(operators.top()) >= getPrecedence(token.value)) {
@@ -248,7 +248,7 @@ void assignVar(unordered_map<string, pair<string, float>>& variables, const stri
 
         // Check if expression is valid
         if (exprTokens.empty() || (exprTokens[0].type != NUMBER && exprTokens[0].type != VARIABLE && exprTokens[0].type != LPAREN)) {
-            cout << "Unknown command. Enter HELP for a list of available commands." << endl;
+            cout << "SNOL> Unknown command! Does not match any valid command of the language. Enter HELP for a list of available commands." << endl;
             return;
         }
 
@@ -291,7 +291,7 @@ void assignVar(unordered_map<string, pair<string, float>>& variables, const stri
             // Error message already printed, do nothing
         }
     } else {
-        cout << "SNOL>Unknown command. Enter HELP for a list of available commands." << endl;
+        cout << "SNOL> Unknown command! Does not match any valid command of the language. Enter HELP for a list of available commands." << endl;
     }
 }
 
@@ -344,15 +344,15 @@ void handleOperation(const vector<Token>& tokens) {
             // Error message already printed, do nothing
         }
     } else {
-        cout << "SNOL>Unknown command. Enter HELP for a list of available commands." << endl;
+        cout << "SNOL> Unknown command! Does not match any valid command of the language. Enter HELP for a list of available commands." << endl;
     }
 }
 
 int main() {
-    cout << "The SNOL Environment is now active, you may proceed with giving your commands. Enter HELP for full command list";
+    cout << "The SNOL Environment is now active, you may proceed with giving your commands. Enter HELP for full command list.";
 
     while (true) {
-        cout << "\n\nEnter Command: ";
+        cout << "\n\nCommand: ";
         string command;
         getline(cin, command);
 
@@ -368,17 +368,17 @@ int main() {
         if (cmd == "HELP") {
             printHelp();
         } else if (cmd == "EXIT!") {
-            cout << "\n\nExiting SNOL...";
+            cout << "\n\nInterpreter is now terminated...";
             break;
         } else if (cmd == "BEG") {
             if (tokens.size() != 2) {
-                cout << "Error: BEG command requires exactly one variable name.";
+                cout << "SNOL> Error! BEG command requires exactly one variable name.";
             } else {
                 beg(tokens[1].value);
             }
         } else if (cmd == "PRINT") {
             if (tokens.size() != 2) {
-                cout << "Error: PRINT command requires exactly one variable name.";
+                cout << "SNOL> Error! PRINT command requires exactly one variable name.";
             } else {
                 print(tokens[1].value);
             }
@@ -413,8 +413,10 @@ int main() {
             
         } else if (tokens[0].type == VARIABLE && tokens.size() == 1) {
             continue;
-        } else {
-            cout << "SNOL>Unknown command. Enter HELP for a list of available commands.";
+        } else if (tokens[0].type == NUMBER && tokens.size() == 1) {
+            continue;
+        }else {
+            cout << "SNOL> Unknown command! Does not match any valid command of the language. Enter HELP for a list of available commands.";
         }
     }
 
