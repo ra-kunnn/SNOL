@@ -144,22 +144,54 @@ float applyOperator(float a, float b, const string& op) {
     throw invalid_argument("Invalid operator");
 }
 
+// Function to check for balanced parentheses
+bool checkParentheses(const vector<Token>& tokens) {
+    stack<char> parentheses;
+    for (const auto& token : tokens) {
+        if (token.type == LPAREN) {
+            parentheses.push('(');
+        } else if (token.type == RPAREN) {
+            if (parentheses.empty()) {
+                return false;
+            }
+            parentheses.pop();
+        }
+    }
+    return parentheses.empty();
+}
+
 // Function to evaluate an arithmetic expression using the Shunting Yard algorithm and the Reverse Polish Notation (RPN) evaluation
 float evaluateExpression(const vector<Token>& tokens, const string& type) {
     stack<float> values;
     stack<string> operators;
+    bool containsInt = false;
+    bool containsFloat = false;
 
     for (const auto& token : tokens) {
         if (token.type == NUMBER) {
             float value = stof(token.value);
             values.push(value);
+            if (token.value.find('.') != string::npos) {
+                containsFloat = true;
+            } else {
+                containsInt = true;
+            }
         } else if (token.type == VARIABLE) {
             if (variables.find(token.value) == variables.end()) {
                 cout << "Undefined variable [" << token.value << "]" << endl;
                 throw invalid_argument("Undefined variable");
             }
             values.push(variables[token.value].second);
+            if (variables[token.value].first == "float") {
+                containsFloat = true;
+            } else {
+                containsInt = true;
+            }
         } else if (token.type == OPERATOR) {
+            if (token.value == "%" && (containsFloat || (!values.empty() && modf(values.top(), &values.top()) != 0))) {
+                cout << "Modulo operation is not allowed on floats." << endl;
+                throw invalid_argument("Modulo on floats");
+            }
             while (!operators.empty() && getPrecedence(operators.top()) >= getPrecedence(token.value)) {
                 float b = values.top();
                 values.pop();
@@ -182,6 +214,10 @@ float evaluateExpression(const vector<Token>& tokens, const string& type) {
                 operators.pop();
                 values.push(applyOperator(a, b, op));
             }
+            if (operators.empty() || operators.top() != "(") {
+                cout << "Mismatched parentheses" << endl;
+                throw invalid_argument("Mismatched parentheses");
+            }
             operators.pop(); // Pop the left parenthesis
         }
     }
@@ -196,6 +232,12 @@ float evaluateExpression(const vector<Token>& tokens, const string& type) {
         values.push(applyOperator(a, b, op));
     }
 
+    // Check for type matching
+    if (containsInt && containsFloat) {
+        cout << "SNOL> Error! Operands must be of the same type in an arithmetic operation!" << endl;
+        throw invalid_argument("Type mismatch");
+    }
+
     return values.top();
 }
 
@@ -205,7 +247,7 @@ void assignVar(unordered_map<string, pair<string, float>>& variables, const stri
         vector<Token> exprTokens(tokens.begin() + 2, tokens.end());
 
         // Check if expression is valid
-        if (exprTokens.empty() || (exprTokens[0].type != NUMBER && exprTokens[0].type != VARIABLE)) {
+        if (exprTokens.empty() || (exprTokens[0].type != NUMBER && exprTokens[0].type != VARIABLE && exprTokens[0].type != LPAREN)) {
             cout << "Unknown command. Enter HELP for a list of available commands." << endl;
             return;
         }
@@ -234,6 +276,12 @@ void assignVar(unordered_map<string, pair<string, float>>& variables, const stri
             } else {
                 lastWasOperator = false;
             }
+        }
+
+        // Check for balanced parentheses
+        if (!checkParentheses(exprTokens)) {
+            cout << "Mismatched parentheses" << endl;
+            return;
         }
 
         try {
@@ -253,7 +301,7 @@ void handleOperation(const vector<Token>& tokens) {
         vector<Token> exprTokens(tokens.begin(), tokens.end());
 
         // Check if expression is valid
-        if (exprTokens.empty() || (exprTokens[0].type != NUMBER && exprTokens[0].type != VARIABLE)) {
+        if (exprTokens.empty() || (exprTokens[0].type != NUMBER && exprTokens[0].type != VARIABLE && exprTokens[0].type != LPAREN)) {
             cout << "Unknown command. Enter HELP for a list of available commands." << endl;
             return;
         }
@@ -282,6 +330,12 @@ void handleOperation(const vector<Token>& tokens) {
             } else {
                 lastWasOperator = false;
             }
+        }
+
+        // Check for balanced parentheses
+        if (!checkParentheses(exprTokens)) {
+            cout << "Mismatched parentheses" << endl;
+            return;
         }
 
         try {
@@ -307,7 +361,7 @@ int main() {
         if (tokens.empty()) {
             cout << "\n\nPlease enter a command.";
             continue;
-        }  
+        }
 
         string cmd = tokens[0].value;
 
@@ -330,10 +384,12 @@ int main() {
             }
         } else if (tokens[0].type == VARIABLE && tokens.size() > 1 && tokens[1].type == ASSIGNMENT) {
             // Handle variable assignment
-            assignVar(variables, tokens[0].value, tokens); 
+            assignVar(variables, tokens[0].value, tokens);
         } else if (tokens.size() >= 3 && tokens[1].type == OPERATOR) {
             // Handle non-assignment operations
             handleOperation(tokens);
+        } else if (tokens[0].type == VARIABLE && tokens.size() == 1) {
+            continue;
         } else {
             cout << "Unknown command. Enter HELP for a list of available commands.";
         }
